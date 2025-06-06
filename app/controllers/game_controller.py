@@ -1,9 +1,7 @@
 from decimal import Decimal
 from typing import Any, Dict
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.database import get_db
 from app.schemas.game_schema import GameCreate, GameModel
 from app.services import game_service

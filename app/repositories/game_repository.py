@@ -2,9 +2,14 @@ from decimal import Decimal
 from typing import Any, Dict, List
 from sqlalchemy import func, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from app.models.game_model import Game
 
 async def create(db: AsyncSession, data: Dict[str, Any]) -> Game:
+    res = await db.execute(select(Game).where(Game.titulo == data["titulo"]))
+    if res.scalar_one_or_none():
+        raise IntegrityError("Título duplicado", params=None, orig="titulo")
+
     obj = Game(**data)
     db.add(obj)
     await db.commit()
