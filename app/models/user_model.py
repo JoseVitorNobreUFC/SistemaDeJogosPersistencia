@@ -9,7 +9,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     nome: Mapped[str] = mapped_column(String(100), index=True)
-    email: Mapped[str] = mapped_column(String(120), index=True)
+    email: Mapped[str] = mapped_column(String(120), unique=True, index=True)
     senha_hash: Mapped[str] = mapped_column(String(255))
     data_cadastro: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
