@@ -1,0 +1,12 @@
+{
+  "name": "Alembic Dev Container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "postgres",
+  "features": {
+    "ghcr.io/devcontainers/features/git-lfs:1": {},
+    "ghcr.io/devcontainers-contrib/features/apt-get-packages:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "forwardPorts": [5432],
+  "waitFor": "onCreateCommand"
+}
