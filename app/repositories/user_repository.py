@@ -3,10 +3,15 @@ from typing import Any, Dict, List
 from sqlalchemy import func, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user_model import User
+from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger("users.repo")
 
 async def create(db: AsyncSession, data: Dict[str, Any]) -> User:
+    res = await db.execute(select(User).where(User.email == data["email"]))
+    if res.scalar_one_or_none():
+        raise IntegrityError("Email duplicado", params=None, orig="email")
+
     obj = User(**data)
     db.add(obj)
     await db.commit()

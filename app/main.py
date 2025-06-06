@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-
 from app.controllers import game_controller, user_controller, review_controller
 
 app = FastAPI()
