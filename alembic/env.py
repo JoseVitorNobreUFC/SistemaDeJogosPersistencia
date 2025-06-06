@@ -57,6 +57,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from app.database import Base 
 import app.models.game_model 
+import app.models.user_model
 
 target_metadata = Base.metadata
 
