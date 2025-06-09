@@ -11,12 +11,18 @@ from alembic import context
 
 from app.database import Base
 from app.models import * 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+async_url = os.getenv("DATABASE_URL")                 
+sync_url = async_url.replace("+asyncpg", "+psycopg2") 
 
 config = context.config
 
 config.set_main_option(
     'sqlalchemy.url',
-    "postgresql+psycopg2://postgres:81903@localhost:5432/sistema_jogos"
+    sync_url
 )
 
 if config.config_file_name is not None:
@@ -58,6 +64,7 @@ if config.config_file_name is not None:
 from app.database import Base 
 import app.models.game_model 
 import app.models.user_model
+import app.models.review_model
 
 target_metadata = Base.metadata
 

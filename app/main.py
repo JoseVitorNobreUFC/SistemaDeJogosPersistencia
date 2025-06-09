@@ -1,6 +1,5 @@
 from fastapi import FastAPI
-
-from app.controllers import game_controller, user_controller
+from app.controllers import game_controller, user_controller, review_controller
 
 app = FastAPI()
 
@@ -10,3 +9,4 @@ async def root():
 
 app.include_router(game_controller.router)
 app.include_router(user_controller.router)
+app.include_router(review_controller.router)
