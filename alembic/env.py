@@ -65,6 +65,7 @@ from app.database import Base
 import app.models.game_model 
 import app.models.user_model
 import app.models.review_model
+import app.models.purchase_model
 
 target_metadata = Base.metadata
 
