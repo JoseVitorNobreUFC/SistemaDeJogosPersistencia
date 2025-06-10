@@ -6,9 +6,9 @@ from sqlalchemy.exc import IntegrityError
 from app.models.purchase_model import Purchase
 
 async def create(db: AsyncSession, data: Dict[str, Any]) -> Purchase:
-  res = await db.execute(select(Purchase).where(Purchase.jogo_id == data["jogo_id"]).where(Purchase.usuario_id == data["usuario_id"]))
-  if res.scalar_one_or_none():
-    raise IntegrityError("Compra duplicada", params=None, orig="jogo_id")
+  res = await db.execute(select(Purchase).where(Purchase.jogo_id == data["jogo_id"], Purchase.usuario_id == data["usuario_id"])) 
+  if res.first() is not None:
+    raise IntegrityError("Compra duplicada", params=None, orig="duplicated purchase")
 
   obj = Purchase(**data)
   db.add(obj)
@@ -27,6 +27,8 @@ async def list_(
     filters: Dict[str, Any],
 ) -> List[Purchase]:
   query = select(Purchase)
+  if id_ := filters.get("id"):
+    query = query.where(Purchase.id == id_)
   if jogo_id := filters.get("jogo_id"):
     query = query.where(Purchase.jogo_id == jogo_id)
   if usuario_id := filters.get("usuario_id"):
@@ -35,6 +37,12 @@ async def list_(
     query = query.where(Purchase.preco >= preco_min)
   if preco_max := filters.get("preco_max"):
     query = query.where(Purchase.preco <= preco_max)
+  if preco := filters.get("preco"):
+    query = query.where(Purchase.preco.like(f"%{preco}%"))
+  if forma_pagamento := filters.get("forma_pagamento"):
+    query = query.where(Purchase.forma_pagamento.like(f"%{forma_pagamento}%"))
+  if data_compra := filters.get("data_compra"):
+    query = query.where(Purchase.data_compra.like(f"%{data_compra}%"))
   res = await db.execute(query.offset(skip).limit(limit))
   return res.scalars().all()
 
