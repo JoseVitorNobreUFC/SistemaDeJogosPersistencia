@@ -1,11 +1,12 @@
-from datetime import datetime
-from sqlalchemy import String, DateTime
 from datetime import datetime, timezone
+from sqlalchemy import String, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
-from typing import List
-from app.models.user_family_model import UserFamily
-from app.models.family_model import Family
+from typing import List, TYPE_CHECKING
+
+if TYPE_CHECKING: ## Para evitar importações circulares
+    from app.models.user_family_model import UserFamily
+    from app.models.family_model import Family
 
 class User(Base):
     __tablename__ = "users"
@@ -19,12 +20,12 @@ class User(Base):
         default=lambda: datetime.now(timezone.utc),
     )
     pais: Mapped[str] = mapped_column(String(60))
-    
+
     families: Mapped[List["Family"]] = relationship(
-        secondary="usuarios_families",
-        back_populates="membros"
+        secondary="user_families",
+        back_populates="members"
     )
 
     family_associations: Mapped[List["UserFamily"]] = relationship(
-        back_populates="usuario"
+        back_populates="user"
     )
