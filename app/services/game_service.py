@@ -53,12 +53,30 @@ async def list_(db: AsyncSession, page: int, limit: int, filters: dict = {}):
                     query = query.where(column_attr == date.fromisoformat(value))
                 else:
                     query = query.where(column_attr == value)
-            except Exception:
+            except Exception as e:
+                # Log se necessário
                 continue
 
     query = query.limit(limit).offset((page - 1) * limit)
     result = await db.execute(query)
     return result.scalars().all()
+
+async def paginated_list(
+    db: AsyncSession,
+    page: int,
+    limit: int,
+    filters: Dict[str, Any],
+):
+    skip  = (page - 1) * limit
+    items = await game_repository.list_(db, skip, limit, filters)
+    total = await game_repository.count_filtered(db, filters)
+
+    return {
+        "items":     items,
+        "page":      page,
+        "per_page":  limit,
+        "total":     total,
+    }
 
 async def update(db: AsyncSession, game_id: int, payload: Dict[str, Any]):
     await get(db, game_id)

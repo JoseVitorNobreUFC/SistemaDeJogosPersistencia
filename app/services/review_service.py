@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.review_model import Review
 from app.repositories import review_repository
@@ -51,18 +51,26 @@ async def get(db: AsyncSession, review_id: int):
 
 async def list_(db: AsyncSession, page: int, limit: int, filters: dict = {}):
     query = select(Review)
+    count_query = select(func.count()).select_from(Review)
 
     for field, value in filters.items():
         column_attr = getattr(Review, field, None)
         if column_attr is not None:
-            if field == "comentario":
-                query = query.where(column_attr.ilike(f"%{value}%"))
-            else:
-                query = query.where(column_attr == value)
+            condition = column_attr.ilike(f"%{value}%") if field == "comentario" else column_attr == value
+            query = query.where(condition)
+            count_query = count_query.where(condition)
 
+    total = (await db.execute(count_query)).scalar_one()
     query = query.limit(limit).offset((page - 1) * limit)
     result = await db.execute(query)
-    return result.scalars().all()
+    items = result.scalars().all()
+
+    return {
+        "page": page,
+        "per_page": limit,
+        "total": total,
+        "items": items,
+    }
 
 async def update(db: AsyncSession, review_id: int, payload: Dict[str, Any]):
     await get(db, review_id)

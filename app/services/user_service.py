@@ -62,16 +62,33 @@ async def list_(db: AsyncSession, page: int, limit: int, filters: dict = {}):
                 elif isinstance(col_type, Integer):
                     query = query.where(column_attr == int(value))
                 elif isinstance(col_type, DateTime):
-                    # aceita formato ISO 8601 (ex: 2024-06-10T13:00:00)
                     query = query.where(column_attr == datetime.fromisoformat(value))
                 else:
                     query = query.where(column_attr == value)
             except Exception:
-                continue  # ignora filtros mal formatados
+                continue 
 
     query = query.limit(limit).offset((page - 1) * limit)
     result = await db.execute(query)
     return result.scalars().all()
+
+async def paginated_list(
+    db: AsyncSession,
+    page: int,
+    limit: int,
+    filters: Dict[str, Any],
+):
+    skip   = (page - 1) * limit
+    items  = await user_repository.list_(db, skip, limit, filters)
+    total  = await user_repository.count_filtered(db, filters)
+
+    return {
+        "items":     items,
+        "page":      page,
+        "per_page":  limit,
+        "total":     total,
+    }
+
 
 async def update(db: AsyncSession, user_id: int, payload: Dict[str, Any]):
     await get(db, user_id)
