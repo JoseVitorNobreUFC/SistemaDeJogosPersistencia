@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.purchase_model import Purchase
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.purchase_schema import PurchaseCreate, PurchaseModel
 from app.services import purchase_service
 
@@ -13,7 +14,7 @@ router = APIRouter(prefix="/purchase", tags=["purchase"])
 async def create_purchase(purchase: PurchaseCreate, db: AsyncSession = Depends(get_db)):
   return await purchase_service.create(db, purchase.model_dump())
 
-@router.get("/", response_model=list[PurchaseModel])
+@router.get("/", response_model=PaginatedResponse[PurchaseModel])
 async def list_purchases(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
@@ -22,7 +23,7 @@ async def list_purchases(
     preco_min: Decimal | None = Query(None, alias="precoMin"),
     preco_max: Decimal | None = Query(None, alias="precoMax"),
     forma_pagamento: str | None = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     filters: Dict[str, Any] = {}
     if usuario_id is not None:
@@ -35,16 +36,27 @@ async def list_purchases(
         filters["preco_max"] = preco_max
     if forma_pagamento is not None:
         filters["forma_pagamento"] = forma_pagamento
-    return await purchase_service.list_(db, page, limit, filters)
+
+    items  = await purchase_service.list_(db, page, limit, filters)
+    total  = await purchase_service.count_filtered(db, filters)
+
+    return {
+        "page":     page,
+        "per_page": limit,
+        "total":    total,
+        "items":    items,
+    }
   
 @router.get("/quantidade")
 async def quantidade(db: AsyncSession = Depends(get_db)):
     return {"quantidade": await purchase_service.count(db)}
   
-@router.get("/search")
+@router.get("/search", response_model=PaginatedResponse[PurchaseModel])
 async def search_purchase(
     field: str = Query(...),
     value: str = Query(...),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
     if not hasattr(Purchase, field):
@@ -52,12 +64,10 @@ async def search_purchase(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Campo inválido: {field}",
         )
-    
-    filters = {
-        field: int(value) if value.isdigit() else value
-    }
 
-    return await purchase_service.list_(db, page=1, limit=1000, filters=filters)
+    filters = {field: int(value) if value.isdigit() else value}
+    return await purchase_service.paginated_list(db, page, limit, filters)
+
   
 @router.get("/{purchase_id}", response_model=PurchaseModel)
 async def get_purchase(purchase_id: int, db: AsyncSession = Depends(get_db)):

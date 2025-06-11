@@ -72,6 +72,27 @@ async def list_(
     result = await db.execute(query)
     return result.scalars().all()
 
+async def count_filtered(db: AsyncSession, filters: Dict[str, Any]) -> int:
+    return await purchase_repository.count_filtered(db, filters)
+
+async def paginated_list(
+    db: AsyncSession,
+    page: int,
+    limit: int,
+    filters: Dict[str, Any],
+):
+    skip   = (page - 1) * limit
+    items  = await purchase_repository.list_(db, skip, limit, filters)
+    total  = await purchase_repository.count_filtered(db, filters)
+
+    return {
+        "items":     items, 
+        "page":      page,
+        "per_page":  limit,
+        "total":     total,
+    }
+
+
 async def update(db: AsyncSession, purchase_id: int, data: Dict[str, Any]):
   await get(db, purchase_id)
   
