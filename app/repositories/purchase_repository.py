@@ -4,12 +4,21 @@ from sqlalchemy import func, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from app.models.purchase_model import Purchase
+from app.models.game_model import Game
 
 async def create(db: AsyncSession, data: Dict[str, Any]) -> Purchase:
   res = await db.execute(select(Purchase).where(Purchase.jogo_id == data["jogo_id"], Purchase.usuario_id == data["usuario_id"])) 
   if res.first() is not None:
     raise IntegrityError("Compra duplicada", params=None, orig="duplicated purchase")
 
+  jogo_res = await db.execute(select(Game).where(Game.id == data["jogo_id"]))
+  jogo = jogo_res.scalar_one_or_none()
+
+  if not jogo:
+    raise IntegrityError("Jogo inexistente", params=None, orig="jogo_id not present")
+
+  if data["preco_pago"] > jogo.preco:
+    raise IntegrityError("Preco pago maior que o preco do jogo", params=None, orig="price too high")
   obj = Purchase(**data)
   db.add(obj)
   await db.commit()

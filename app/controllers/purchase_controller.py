@@ -46,6 +46,14 @@ async def search_purchase(
     value: str = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
+    if field not in {
+        "usuario_id",
+        "jogo_id",
+        "preco",
+        "forma_pagamento",
+        "data_compra"
+        }:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Campo inválido")
     filters = { field: int(value) if value.isnumeric() else value }
     return await purchase_service.list_(db, 1, 1000, filters)
   

@@ -31,6 +31,13 @@ async def create(db: AsyncSession, data: Dict[str, Any]):
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Não existe um usuário com este id"
         )
+    elif "price too high" in str(e.orig).lower():
+      logger.error(f"Preco pago maior que o preco do jogo: {data.get('preco_pago')}")
+      raise HTTPException(
+          status_code=status.HTTP_400_BAD_REQUEST,
+          detail="Preco pago maior que o preco do jogo"
+      )
+    logger.error(f"Erro de integridade ao criar compra: {str(e)}")
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Erro de integridade nos dados"
