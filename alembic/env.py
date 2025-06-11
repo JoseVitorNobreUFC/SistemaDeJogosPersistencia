@@ -66,6 +66,7 @@ import app.models.game_model
 import app.models.user_model
 import app.models.review_model
 import app.models.purchase_model
+import app.models.dlc_model
 
 target_metadata = Base.metadata
 
