@@ -2,6 +2,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
+from app.models.user_model import User
 from app.schemas.user_schema import UserCreate, UserModel
 from app.services import user_service
 
@@ -39,10 +40,14 @@ async def search_user(
     value: str = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
-    if field not in {"nome", "email", "pais"}:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Campo inválido")
+    if not hasattr(User, field):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Campo inválido: {field}",
+        )
+
     filters = {field: value}
-    return await user_service.list_(db, 1, 1000, filters)
+    return await user_service.list_(db, page=1, limit=1000, filters=filters)
 
 @router.get("/{user_id}", response_model=UserModel)
 async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):

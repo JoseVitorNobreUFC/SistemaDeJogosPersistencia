@@ -1,7 +1,9 @@
 from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
+from app.models.review_model import Review
 from app.schemas.review_schema import ReviewCreate, ReviewModel
 from app.services import review_service
 
@@ -42,10 +44,26 @@ async def search_review(
     value: str = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
-    if field not in {"usuario_id", "jogo_id"}:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Campo inválido")
-    filters = {field: int(value)}
-    return await review_service.list_(db, 1, 1000, filters)
+    mapper = inspect(Review)
+    if field not in mapper.columns:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Campo inválido: {field}"
+        )
+
+    column = mapper.columns[field]
+
+    python_type = column.type.python_type
+    try:
+        typed_value = python_type(value)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Valor inválido para o tipo do campo {field}"
+        )
+
+    filters = {field: typed_value}
+    return await review_service.list_(db, page=1, limit=1000, filters=filters)
 
 @router.get("/{review_id}", response_model=ReviewModel)
 async def get_review(review_id: int, db: AsyncSession = Depends(get_db)):

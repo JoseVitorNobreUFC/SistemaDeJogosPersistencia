@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import date
+from datetime import datetime
 from decimal import Decimal
 
 class PurchaseCreate(BaseModel):
@@ -8,7 +8,7 @@ class PurchaseCreate(BaseModel):
   usuario_id: int
   preco_pago: Decimal
   forma_pagamento: str
-  data_compra: date
+  data_compra: datetime
 
 class PurchaseModel(PurchaseCreate):
   id: int

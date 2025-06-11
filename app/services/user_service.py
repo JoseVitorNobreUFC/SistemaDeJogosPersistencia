@@ -1,7 +1,10 @@
+from datetime import datetime
 import logging
 from typing import Any, Dict
 from fastapi import HTTPException, status
+from sqlalchemy import DateTime, Integer, String, Text, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.user_model import User
 from app.repositories import user_repository
 from sqlalchemy.exc import IntegrityError
 
@@ -46,14 +49,29 @@ async def get(db: AsyncSession, user_id: int):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User não encontrado")
     return obj
 
-async def list_(
-    db: AsyncSession,
-    page: int,
-    limit: int,
-    filters: Dict[str, Any],
-):
-    skip = (page - 1) * limit
-    return await user_repository.list_(db, skip, limit, filters)
+async def list_(db: AsyncSession, page: int, limit: int, filters: dict = {}):
+    query = select(User)
+
+    for field, value in filters.items():
+        column_attr = getattr(User, field, None)
+        if column_attr is not None:
+            col_type = column_attr.type
+            try:
+                if isinstance(col_type, (String, Text)):
+                    query = query.where(column_attr.ilike(f"%{value}%"))
+                elif isinstance(col_type, Integer):
+                    query = query.where(column_attr == int(value))
+                elif isinstance(col_type, DateTime):
+                    # aceita formato ISO 8601 (ex: 2024-06-10T13:00:00)
+                    query = query.where(column_attr == datetime.fromisoformat(value))
+                else:
+                    query = query.where(column_attr == value)
+            except Exception:
+                continue  # ignora filtros mal formatados
+
+    query = query.limit(limit).offset((page - 1) * limit)
+    result = await db.execute(query)
+    return result.scalars().all()
 
 async def update(db: AsyncSession, user_id: int, payload: Dict[str, Any]):
     await get(db, user_id)

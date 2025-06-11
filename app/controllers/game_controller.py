@@ -3,6 +3,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
+from app.models.game_model import Game
 from app.schemas.game_schema import GameCreate, GameModel
 from app.services import game_service
 
@@ -43,10 +44,14 @@ async def search_game(
     value: str = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
-    if field not in {"titulo", "desenvolvedora"}:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Campo inválido")
+    if not hasattr(Game, field):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Campo inválido: {field}",
+        )
+
     filters = {field: value}
-    return await game_service.list_(db, 1, 1000, filters)
+    return await game_service.list_(db, page=1, limit=1000, filters=filters)
 
 @router.get("/{game_id}", response_model=GameModel)
 async def get_game(game_id: int, db: AsyncSession = Depends(get_db)):
