@@ -2,11 +2,12 @@
   "name": "Alembic Dev Container",
   "dockerComposeFile": "docker-compose.yml",
   "service": "postgres",
+  "workspaceFolder": ".",
   "features": {
     "ghcr.io/devcontainers/features/git-lfs:1": {},
     "ghcr.io/devcontainers-contrib/features/apt-get-packages:1": {},
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "forwardPorts": [5432],
-  "waitFor": "onCreateCommand"
+  "onCreateCommand": "(docker run -d --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=81903 -e POSTGRES_DB=sistema_jogos -e PGDATA=/var/lib/postgresql/data/pgdata -v pgdata:/var/lib/postgresql/data postgres) || true && docker update --restart unless-stopped $(docker ps -q)"
 }
