@@ -2,13 +2,15 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import date
 from decimal import Decimal
+from datetime import datetime
 
-class FamilyCreate(BaseModel): # Atualizar o esquema para ficar congruente com o model
-    titulo: str
+class FamilyCreate(BaseModel): 
+    nome: str
     descricao: Optional[str] = None
-    data_lancamento: date
-    preco: Decimal
-    desenvolvedora: str
+    publicidade: str
+    criador_id: int
+    data_criacao: datetime
+    
 
 class FamilyModel(FamilyCreate):
     id: int
