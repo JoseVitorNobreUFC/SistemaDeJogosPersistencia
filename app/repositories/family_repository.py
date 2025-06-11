@@ -55,3 +55,18 @@ async def delete_(db: AsyncSession, family_id: int) -> None:
 async def count(db: AsyncSession) -> int:
   res = await db.execute(select(func.count()).select_from(Family))
   return res.scalar_one()
+
+async def count_filtered(db: AsyncSession, filters: Dict[str, Any]) -> int:
+    query = select(func.count(Family.id))
+
+    for field, value in filters.items():
+        column_attr = getattr(Family, field, None)
+        if column_attr is None:
+            continue
+        if hasattr(column_attr.type, "python_type") and column_attr.type.python_type is str:
+            query = query.where(column_attr.ilike(f"%{value}%"))
+        else:
+            query = query.where(column_attr == value)
+
+    total = await db.execute(query)
+    return total.scalar_one()
