@@ -1,11 +1,9 @@
-import logging
+from app import file_logger as logger
 from typing import Any, Dict, List
 from sqlalchemy import func, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user_model import User
 from sqlalchemy.exc import IntegrityError
-
-logger = logging.getLogger("users.repo")
 
 async def create(db: AsyncSession, data: Dict[str, Any]) -> User:
     res = await db.execute(select(User).where(User.email == data["email"]))
