@@ -3,6 +3,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
+from app.models.purchase_model import Purchase
 from app.schemas.purchase_schema import PurchaseCreate, PurchaseModel
 from app.services import purchase_service
 
@@ -46,16 +47,17 @@ async def search_purchase(
     value: str = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
-    if field not in {
-        "usuario_id",
-        "jogo_id",
-        "preco",
-        "forma_pagamento",
-        "data_compra"
-        }:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Campo inválido")
-    filters = { field: int(value) if value.isnumeric() else value }
-    return await purchase_service.list_(db, 1, 1000, filters)
+    if not hasattr(Purchase, field):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Campo inválido: {field}",
+        )
+    
+    filters = {
+        field: int(value) if value.isdigit() else value
+    }
+
+    return await purchase_service.list_(db, page=1, limit=1000, filters=filters)
   
 @router.get("/{purchase_id}", response_model=PurchaseModel)
 async def get_purchase(purchase_id: int, db: AsyncSession = Depends(get_db)):

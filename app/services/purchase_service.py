@@ -1,7 +1,9 @@
 import logging
 from typing import Any, Dict
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.purchase_model import Purchase
 from app.repositories import purchase_repository
 from sqlalchemy.exc import IntegrityError
 
@@ -56,8 +58,19 @@ async def list_(
     limit: int,
     filters: Dict[str, Any],
 ):
-  skip = (page - 1) * limit
-  return await purchase_repository.list_(db, skip, limit, filters)
+    query = select(Purchase)
+
+    for field, value in filters.items():
+        column_attr = getattr(Purchase, field, None)
+        if column_attr is not None:
+            if isinstance(value, str):
+                query = query.where(column_attr.ilike(f"%{value}%"))
+            else:
+                query = query.where(column_attr == value)
+
+    query = query.limit(limit).offset((page - 1) * limit)
+    result = await db.execute(query)
+    return result.scalars().all()
 
 async def update(db: AsyncSession, purchase_id: int, data: Dict[str, Any]):
   await get(db, purchase_id)
