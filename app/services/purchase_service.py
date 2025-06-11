@@ -1,7 +1,9 @@
 import logging
 from typing import Any, Dict
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.purchase_model import Purchase
 from app.repositories import purchase_repository
 from sqlalchemy.exc import IntegrityError
 
@@ -31,6 +33,13 @@ async def create(db: AsyncSession, data: Dict[str, Any]):
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Não existe um usuário com este id"
         )
+    elif "price too high" in str(e.orig).lower():
+      logger.error(f"Preco pago maior que o preco do jogo: {data.get('preco_pago')}")
+      raise HTTPException(
+          status_code=status.HTTP_400_BAD_REQUEST,
+          detail="Preco pago maior que o preco do jogo"
+      )
+    logger.error(f"Erro de integridade ao criar compra: {str(e)}")
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Erro de integridade nos dados"
@@ -49,8 +58,40 @@ async def list_(
     limit: int,
     filters: Dict[str, Any],
 ):
-  skip = (page - 1) * limit
-  return await purchase_repository.list_(db, skip, limit, filters)
+    query = select(Purchase)
+
+    for field, value in filters.items():
+        column_attr = getattr(Purchase, field, None)
+        if column_attr is not None:
+            if isinstance(value, str):
+                query = query.where(column_attr.ilike(f"%{value}%"))
+            else:
+                query = query.where(column_attr == value)
+
+    query = query.limit(limit).offset((page - 1) * limit)
+    result = await db.execute(query)
+    return result.scalars().all()
+
+async def count_filtered(db: AsyncSession, filters: Dict[str, Any]) -> int:
+    return await purchase_repository.count_filtered(db, filters)
+
+async def paginated_list(
+    db: AsyncSession,
+    page: int,
+    limit: int,
+    filters: Dict[str, Any],
+):
+    skip   = (page - 1) * limit
+    items  = await purchase_repository.list_(db, skip, limit, filters)
+    total  = await purchase_repository.count_filtered(db, filters)
+
+    return {
+        "items":     items, 
+        "page":      page,
+        "per_page":  limit,
+        "total":     total,
+    }
+
 
 async def update(db: AsyncSession, purchase_id: int, data: Dict[str, Any]):
   await get(db, purchase_id)
