@@ -17,7 +17,7 @@ async def create(db: AsyncSession, data: Dict[str, Any]):
     logger.info("DLC criado")
     return obj
   except IntegrityError as e:
-    if "titulo" in str(e.orig) or "unique constraint" in str(e.orig).lower():
+    if "titulo" in str(e.orig):
       logger.error(f"Tentativa de criar DLC com título duplicado: {data.get('titulo')}")
       raise HTTPException(
           status_code=status.HTTP_409_CONFLICT, 
@@ -126,9 +126,9 @@ async def update(db: AsyncSession, dlc_id: int, data: Dict[str, Any]):
     
 async def delete(db: AsyncSession, dlc_id: int):
   await get(db, dlc_id)
-  await dlc_repository.delete(db, dlc_id)
+  await dlc_repository.delete_(db, dlc_id)
   logger.info("DLC deletado")
   return {"message": "DLC deletado com sucesso"}
 
 async def count(db: AsyncSession):
-  return await dlc_repository.count(db)
+  return await dlc_repository.count_(db)

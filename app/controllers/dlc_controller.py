@@ -44,7 +44,7 @@ async def search_dlc(
     limit: int = Query(10, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
-    if not hasattr(DLC, field):
+    if not hasattr(DLCModel, field):
         raise HTTPException(status_code=400, detail=f"Campo inválido: {field}")
 
     filters = {field: int(value) if value.isdigit() else value}
