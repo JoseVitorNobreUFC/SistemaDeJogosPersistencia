@@ -38,6 +38,21 @@ async def list_(
     res = await db.execute(query.offset(skip).limit(limit))
     return res.scalars().all()
 
+async def count_filtered(db: AsyncSession, filters: Dict[str, Any]) -> int:
+    query = select(func.count(User.id))
+
+    for field, value in filters.items():
+        column_attr = getattr(User, field, None)
+        if column_attr is None:
+            continue
+        if hasattr(column_attr.type, "python_type") and column_attr.type.python_type is str:
+            query = query.where(column_attr.ilike(f"%{value}%"))
+        else:
+            query = query.where(column_attr == value)
+
+    total = await db.execute(query)
+    return total.scalar_one()
+
 async def update_(db: AsyncSession, user_id: int, data: Dict[str, Any]) -> None:
     await db.execute(update(User).where(User.id == user_id).values(**data))
     await db.commit()
